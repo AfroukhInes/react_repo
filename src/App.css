@@ -72,6 +72,7 @@ h1 {
 
 .fa-trash {
   margin-left: 0.75rem;
+  margin-right: 0.75rem;
 }
 
 .incompleted {
@@ -86,7 +87,8 @@ h1 {
 }
 
 .edit-icon,
-.delete-icon {
+.delete-icon, 
+.done-icon {
   cursor: pointer;
 }
  

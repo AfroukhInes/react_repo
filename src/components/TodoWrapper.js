@@ -1,29 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Todo } from "./Todo";
 import { TodoForm } from "./TodoForm";
-import { v4 as uuidv4 } from "uuid";
+import { supabase } from './supabaseClient';
 import { EditTodoForm } from "./EditTodoForm";
 
 export const TodoWrapper = () => {
   const [todos, setTodos] = useState([]);
 
-  const addTodo = (todo) => {
-    setTodos([
-      ...todos,
-      { id: uuidv4(), task: todo, completed: false, isEditing: false },
-    ]);
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) console.log('Error fetching todos:', error);
+    else setTodos(data);
+  };
+
+  const addTodo = async (todo) => {
+    const { data, error } = await supabase
+      .from('todos')
+      .insert([{ task: todo, completed: false }])
+      .select();
+    if (error) console.log('Error adding todo:', error);
+    else setTodos([...todos, data[0]]);
+  };
+
+  const deleteTodo = async (id) => {
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', id);
+    if (error) console.log('Error deleting todo:', error);
+    else setTodos(todos.filter((todo) => todo.id !== id));
   }
 
-  const deleteTodo = (id) => setTodos(todos.filter((todo) => todo.id !== id));
-
-  const toggleComplete = (id) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
+  const toggleComplete = async (id) => {
+    const todoToUpdate = todos.find((todo) => todo.id === id);
+    const { error } = await supabase
+      .from('todos')
+      .update({ completed: !todoToUpdate.completed })
+      .eq('id', id);
+    if (error) console.log('Error updating todo:', error);
+    else {
+      setTodos(
+        todos.map((todo) =>
+          todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        )
+      );
+    }
   }
-
   const editTodo = (id) => {
     setTodos(
       todos.map((todo) =>
@@ -32,13 +61,23 @@ export const TodoWrapper = () => {
     );
   }
 
-  const editTask = (task, id) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, task, isEditing: !todo.isEditing } : todo
-      )
-    );
+
+  const editTask = async (task, id) => {
+    const { error } = await supabase
+      .from('todos')
+      .update({ task: task })
+      .eq('id', id);
+    if (error) {
+      console.log('Error updating todo:', error);
+    } else {
+      setTodos(
+        todos.map((todo) =>
+          todo.id === id ? { ...todo, task, isEditing: false } : todo
+        )
+      );
+    }
   };
+
 
   return (
     <div className="TodoWrapper">
